@@ -41,7 +41,7 @@ Follow these steps to set up the project locally.
    ``` py
    API_KEY = "your_gemini_api_goes_here"
    ```
-   *You can get your API key from [Google AI Studio](https://aistudio.google.com/app/api-keys)
+   *You can get your API key from [Google AI Studio](https://aistudio.google.com/app/api-keys)*
 
 ### Usage
 1. Place your PDF file (e.g., `book.pdf`) in the root folder of the project.
