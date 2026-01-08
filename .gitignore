@@ -7,18 +7,39 @@ __pycache__/
 .venv/
 venv/
 ENV/
+env/
 
 # IDE / Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
 # OS-specific
 .DS_Store
 Thumbs.db
+.Spotlight-V100
+.Trashes
 
-# Secrets
+# Secrets / Environment
 .env
 *.env
 secrets.toml
+
+# Output files
+*.jsonl
+*_progress.json
+
+# Screenshots from Kindle translation
+screenshots/
+
+# PDF files (user's books)
+*.pdf
+
+# Log files
+*.log
+
+# Playwright
+playwright-report/
+test-results/

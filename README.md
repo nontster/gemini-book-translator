@@ -1,95 +1,151 @@
-## Book Translation Tool (with Gemini API)
-A Python tool  to translate PDF documents page-by-page using the Google Gemini, maintaining translation context.
+# 📚 Book Translation Tool (with Gemini API)
 
-### Features
-* __Intelligent Translation:__ Leverages the power of **Google Gemini** for high-quality, nuanced translations.
-* __Context Preservation:__ Feeds the translation from the previous page as context for the next one, improving consistency across long documents. 
-* __Structured Output:__ Saves all translations in **JSON Lines** (`.jsonl`) format, perfect for data analysis or further processing.
-* __Advanced Error Handling:__ Robustly manages API errors, including rate limits, with automatic retry logic.
-* __Detailed Logging:__ Tracks every operation with clear, timestamped log messages for easy debugging.
+A Python tool to translate books using Google Gemini AI. Supports **PDF files** and **Kindle Web** (read.amazon.com).
 
-### Installation and Configuration
-Follow these steps to set up the project locally.
+## ✨ Features
 
-1. **Copy the repository:** 
-   ```bash 
-   git clone [https://github.com/](https://github.com/)<your-username>/book-translation-tool.git
-   cd book-translation-tool 
-   ```
-2. **Create and activate a virtual environment** *(recommended)*:
-   * __macOS/Linux:__
-      ```bash
-      python3 -m venv .venv
-      source .venv/bin/activate
-      ```
-   * __Windows:__
-      ```bash
-      python -m venv .venv
-      .\.venv\Scripts\activate
-      ```
-3. **Install the dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Configure your API Key:**
+### PDF Translation
 
-   Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-   Now, edit the `.env` file and add your Google Gemini API key:
-   ``` py
-   API_KEY = "your_gemini_api_goes_here"
-   ```
-   *You can get your API key from [Google AI Studio](https://aistudio.google.com/app/api-keys)*
+- 📄 **PDF Support:** Translate PDF documents page-by-page
+- 🧠 **Context Preservation:** Uses previous translations as context for consistency
+- 📝 **Structured Output:** Saves translations in JSON Lines (`.jsonl`) format
 
-### Usage
-1. Place your PDF file (e.g., `book.pdf`) in the root folder of the project.
-2. Create your prompt file (e.g., `prompt.txt`) or use one from the `prompts/` directory as a starting point.
-3. Run the script from your terminal:
-   ```bash
-   python bookTranslation.py
-   ```
-4. Follow the on-screen prompts to provide the paths to your PDF, output file, and prompt file.
+### Kindle Web Translation (NEW)
 
-The script will begin processing the PDF page by page, showing real-time progress.
+- 📸 **Screen Capture:** Automatically captures each page from Kindle Web
+- 👁️ **OCR with Gemini Vision:** Extracts text from screenshots using AI
+- 🔄 **Resume Support:** Can resume interrupted translations
+- ⌨️ **Auto Navigation:** Uses keyboard to flip pages automatically
 
-### Output Format
-The output `.jsonl` file will contain one JSON object for each page of the PDF.
+### Common Features
 
-**Example of a successfully translated page:**
-```json
-{
-   "page_number": 1,
-   "status": "success",
-   "original_text_preview": "In principio era il Verbo...",
-   "translated_text": "In the beginning was the Word...",
-   "error_message": null
-}
-```
-**Example of a page that failed:**
-```json
-{
-   "page_number": 2,
-   "status": "error",
-   "original_text_preview": "This page was empty or unreadable...",
-   "translated_text": null,
-   "error_message": "Page did not contain any extractable text."
-}
+- 🔁 **Auto Retry:** Handles API rate limits with exponential backoff
+- 📊 **Detailed Logging:** Timestamped logs for progress tracking
+
+---
+
+## 🚀 Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/<your-username>/gemini-book-translator.git
+cd gemini-book-translator
 ```
 
-## Contributing 
-Contributions are welcome! This is a personal project, but I'm, open to collaboration.
-Please feel free to open an issue to discuss a new feature or submit a pull request.
+### 2. Create virtual environment
 
-## License
-This project is licensed under the MIT License - see the `LICENSE` file for details.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# or: .\.venv\Scripts\activate  # Windows
+```
 
-## Author
-_**Luca D'Alessandro**_
+### 3. Install dependencies
 
-*Mathematical Sciences for AI Student, Sapienza University of Rome*
+```bash
+pip install -r requirements.txt
+```
 
-Passionate about Artificial Intelligence and building tools to solve real-world problems.
-* **[GitHub](https://github.com/luca-dalessandro)**
-* **[LinkedIn](https://www.linkedin.com/in/luca-d-alessandro-904o13d4/)**
+### 4. Install Playwright browser (for Kindle translation)
+
+```bash
+playwright install chromium
+```
+
+### 5. Configure API Key
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your [Google Gemini API key](https://aistudio.google.com/app/api-keys):
+
+```
+API_KEY=your_gemini_api_key_here
+```
+
+---
+
+## 📖 Usage
+
+### PDF Translation
+
+```bash
+python bookTranslation.py
+```
+
+Follow the prompts to:
+
+1. Enter PDF filename
+2. Enter output filename (`.jsonl`)
+3. Enter prompt file (e.g., `prompts/prompt_th.txt`)
+
+### Kindle Web Translation
+
+```bash
+python kindleTranslation.py
+```
+
+Steps:
+
+1. **Login** - Sign in to Amazon in the browser window
+2. **Select Book** - Click on a book in your library
+3. **Position** - Navigate to the starting page
+4. **Start** - Press Enter to begin translation
+
+> ⚠️ **Disclaimer:** Kindle translation is for personal use only. May violate Amazon's Terms of Service.
+
+---
+
+## 📁 Prompt Files
+
+| File                     | Translation Direction |
+| ------------------------ | --------------------- |
+| `prompts/prompt_th.txt`  | English → Thai        |
+| `prompts/prompt_ing.txt` | Italian → English     |
+| `prompts/prompt_it.txt`  | English → Italian     |
+| `prompts/prompt_ocr.txt` | OCR (text extraction) |
+
+---
+
+## 📤 Output Format
+
+Translations are saved as `.jsonl` files:
+
+```json
+{
+  "page_number": 1,
+  "status": "success",
+  "original_text": "The original text...",
+  "translated_text": "ข้อความที่แปลแล้ว...",
+  "error_message": null
+}
+```
+
+For Kindle translation, screenshots are saved in `screenshots/` folder.
+
+---
+
+## 🛠️ Project Structure
+
+```
+gemini-book-translator/
+├── bookTranslation.py     # PDF translation script
+├── kindleTranslation.py   # Kindle Web translation script
+├── kindle_reader.py       # Browser automation for Kindle
+├── vision_ocr.py          # OCR using Gemini Vision API
+├── utils.py               # Utility functions
+├── prompts/               # Translation prompt templates
+│   ├── prompt_th.txt      # English → Thai
+│   ├── prompt_ing.txt     # Italian → English
+│   └── prompt_ocr.txt     # OCR prompt
+├── requirements.txt       # Python dependencies
+└── .env.example           # Environment template
+```
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
