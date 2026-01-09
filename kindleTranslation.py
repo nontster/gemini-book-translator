@@ -96,11 +96,34 @@ async def process_kindle_book(
         
     start_page = progress.get("pages_completed", 0)
     
-    # Skip to the starting page if resuming
+    # Handle resume
     if start_page > 0:
-        logger.info(f"Resuming from page {start_page + 1}...")
-        for i in range(start_page):
-            await reader.next_page()
+        print(f"\n📍 Resume detected! Last completed page: {start_page}")
+        print(f"\n   Options:")
+        print(f"   [1] Book is complete - exit now")
+        print(f"   [2] Continue from current position (I already navigated to page {start_page + 1})")
+        print(f"   [3] Start fresh from page 1 (will reset progress)")
+        print(f"   [4] Convert to Word document (.docx) and exit")
+        
+        choice = input("\n   Enter choice (1/2/3/4): ").strip()
+        
+        if choice == "1":
+            logger.info("🏁 Book translation marked as complete!")
+            logger.info(f"   Total pages translated: {start_page}")
+            return
+        elif choice == "3":
+            start_page = 0
+            # Remove progress file
+            if progress_file and os.path.exists(progress_file):
+                os.remove(progress_file)
+            logger.info("Progress reset. Starting from page 1...")
+        elif choice == "4":
+            # Convert to docx
+            from jsonl_to_docx import convert_jsonl_to_docx
+            logger.info("📄 Converting to Word document...")
+            docx_file = convert_jsonl_to_docx(jsonl_name_file)
+            logger.info(f"✅ Saved to: {docx_file}")
+            return
     
     history_it = ""
     history_ing = ""
@@ -194,14 +217,22 @@ async def process_kindle_book(
                 if progress_file:
                     save_progress(progress_file, page_number, page_number)
             
+            # Check if we've reached the last page before navigating
+            if await reader.is_last_page():
+                logger.info("🏁 Reached the last page of the book. Translation complete!")
+                break
+            
+            # Take screenshot before navigation for comparison
+            pre_nav_screenshot = await reader.page.screenshot()
+            
             # Navigate to next page
             if not await reader.next_page():
                 logger.info("Could not navigate to next page. End of book or error.")
                 break
             
-            # Check if we've reached the last page
-            if await reader.is_last_page():
-                logger.info("Reached the last page of the book.")
+            # Check if page actually changed (if not, we're at the last page)
+            if not await reader.check_page_changed(pre_nav_screenshot):
+                logger.info("🏁 Page didn't change after navigation. Reached the last page!")
                 break
                 
     except KeyboardInterrupt:

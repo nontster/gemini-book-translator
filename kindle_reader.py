@@ -251,26 +251,82 @@ class KindleWebReader:
     async def is_last_page(self) -> bool:
         """
         Check if current page is the last page.
-        Note: This is difficult to detect reliably, so we use heuristics.
+        Uses multiple heuristics for reliable detection.
         
         Returns:
             bool: True if likely last page
         """
-        # Take screenshot before and after pressing next
-        # If they're identical, we're likely at the last page
-        # This is a simple heuristic and may not be 100% accurate
-        
         try:
-            # Check if next button is disabled
+            # Method 1: Check if next button is disabled
             next_btn = await self.page.query_selector(SELECTORS["next_page_button"])
             if next_btn:
                 is_disabled = await next_btn.get_attribute('disabled')
-                if is_disabled:
+                aria_disabled = await next_btn.get_attribute('aria-disabled')
+                if is_disabled or aria_disabled == 'true':
+                    logger.info("Last page detected: next button is disabled")
                     return True
-        except:
-            pass
+            
+            # Method 2: Check for end-of-book indicators in page content
+            page_content = await self.page.content()
+            end_indicators = [
+                'end of book',
+                'the end',
+                'end of sample',
+                'end of this sample',
+                'last page',
+                'ก่อนที่คุณจะไป',  # Thai "Before you go"
+                'keep reading',
+                'rate this book',
+                'you\'ve reached the end',
+            ]
+            
+            page_lower = page_content.lower()
+            for indicator in end_indicators:
+                if indicator in page_lower:
+                    logger.info(f"Last page detected: found '{indicator}' in page")
+                    return True
+            
+            # Method 3: Check for end-of-book overlay
+            try:
+                end_overlay = await self.page.query_selector('[class*="endOfBook"], [class*="end-of-book"], [data-testid="end-of-book"]')
+                if end_overlay:
+                    is_visible = await end_overlay.is_visible()
+                    if is_visible:
+                        logger.info("Last page detected: end-of-book overlay visible")
+                        return True
+            except:
+                pass
+                
+        except Exception as e:
+            logger.debug(f"Error checking for last page: {e}")
         
         return False
+    
+    async def check_page_changed(self, old_screenshot: bytes) -> bool:
+        """
+        Check if page content has changed by comparing screenshots.
+        
+        Args:
+            old_screenshot (bytes): Previous screenshot data
+            
+        Returns:
+            bool: True if page changed, False if same (likely last page)
+        """
+        try:
+            import hashlib
+            
+            # Take new screenshot
+            new_screenshot = await self.page.screenshot()
+            
+            # Compare hashes
+            old_hash = hashlib.md5(old_screenshot).hexdigest()
+            new_hash = hashlib.md5(new_screenshot).hexdigest()
+            
+            return old_hash != new_hash
+            
+        except Exception as e:
+            logger.debug(f"Error comparing screenshots: {e}")
+            return True  # Assume changed if error
     
     async def close(self) -> None:
         """

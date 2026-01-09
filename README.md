@@ -16,11 +16,13 @@ A Python tool to translate books using Google Gemini AI. Supports **PDF files** 
 - 👁️ **OCR with Gemini Vision:** Extracts text from screenshots using AI
 - 🔄 **Resume Support:** Can resume interrupted translations
 - ⌨️ **Auto Navigation:** Uses keyboard to flip pages automatically
+- 🏁 **Auto Exit:** Detects last page and exits automatically
 
 ### Common Features
 
 - 🔁 **Auto Retry:** Handles API rate limits with exponential backoff
 - 📊 **Detailed Logging:** Timestamped logs for progress tracking
+- 📄 **Word Export:** Convert translations to Microsoft Word (.docx)
 
 ---
 
@@ -108,16 +110,33 @@ Steps:
 3. **Position** - Navigate to the starting page
 4. **Start** - Press Enter to begin translation
 
-### Reset Progress (Start from Page 1)
+### Resume Options
 
-To start translation from the beginning instead of resuming:
+When resuming a previous translation, you'll see:
+
+```
+📍 Resume detected! Last completed page: 100
+
+   Options:
+   [1] Book is complete - exit now
+   [2] Continue from current position
+   [3] Start fresh from page 1 (will reset progress)
+   [4] Convert to Word document (.docx) and exit
+```
+
+### Convert to Word Document
+
+You can convert your `.jsonl` translation to Microsoft Word:
 
 ```bash
-# Delete progress file (replace 'output' with your filename)
-rm output_progress.json
+# Basic conversion
+python jsonl_to_docx.py output.jsonl
 
-# Or delete both progress and output file for a fresh start
-rm output_progress.json output.jsonl
+# Specify output filename
+python jsonl_to_docx.py output.jsonl -o my_book.docx
+
+# Include original text alongside translation
+python jsonl_to_docx.py output.jsonl --include-original
 ```
 
 > ⚠️ **Disclaimer:** Kindle translation is for personal use only. May violate Amazon's Terms of Service.
@@ -161,6 +180,7 @@ gemini-book-translator/
 ├── kindleTranslation.py   # Kindle Web translation script
 ├── kindle_reader.py       # Browser automation for Kindle
 ├── vision_ocr.py          # OCR using Gemini Vision API
+├── jsonl_to_docx.py       # Convert JSONL to Word document
 ├── utils.py               # Utility functions
 ├── prompts/               # Translation prompt templates
 │   ├── prompt_th.txt      # English → Thai
@@ -181,6 +201,7 @@ This project uses:
 - **[google-genai](https://pypi.org/project/google-genai/)** - Official Google GenAI SDK (successor to deprecated `google-generativeai`)
 - **[Playwright](https://playwright.dev/)** - Browser automation for Kindle Web
 - **[Pillow](https://pillow.readthedocs.io/)** - Image processing for OCR
+- **[python-docx](https://python-docx.readthedocs.io/)** - Microsoft Word document generation
 
 ---
 
