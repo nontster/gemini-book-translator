@@ -10,7 +10,7 @@ A Python tool to translate books using Google Gemini AI. Supports **PDF files** 
 - 🧠 **Context Preservation:** Uses previous translations as context for consistency
 - 📝 **Structured Output:** Saves translations in JSON Lines (`.jsonl`) format
 
-### Kindle Web Translation (NEW)
+### Kindle Web Translation
 
 - 📸 **Screen Capture:** Automatically captures each page from Kindle Web
 - 👁️ **OCR with Gemini Vision:** Extracts text from screenshots using AI
@@ -36,9 +36,9 @@ cd gemini-book-translator
 ### 2. Create virtual environment
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# or: .\.venv\Scripts\activate  # Windows
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+# or: .\venv\Scripts\activate  # Windows
 ```
 
 ### 3. Install dependencies
@@ -59,11 +59,23 @@ playwright install chromium
 cp .env.example .env
 ```
 
-Edit `.env` and add your [Google Gemini API key](https://aistudio.google.com/app/api-keys):
+Edit `.env` and add your [Google Gemini API key](https://aistudio.google.com/app/apikey):
 
-```
+```env
 API_KEY=your_gemini_api_key_here
+MODEL_TYPE=gemini-3-flash-preview
 ```
+
+### Available Models
+
+| Model Name               | Description                         |
+| ------------------------ | ----------------------------------- |
+| `gemini-3-flash-preview` | Latest Gemini 3 Flash (recommended) |
+| `gemini-3-pro-preview`   | Gemini 3 Pro                        |
+| `gemini-2.5-flash`       | Gemini 2.5 Flash (stable)           |
+| `gemini-2.0-flash`       | Gemini 2.0 Flash                    |
+
+> ⚠️ **Note:** Gemini 3 models are currently in preview. Use `gemini-3-flash-preview` not `gemini-3-flash`.
 
 ---
 
@@ -72,6 +84,7 @@ API_KEY=your_gemini_api_key_here
 ### PDF Translation
 
 ```bash
+source venv/bin/activate  # Activate venv first
 python bookTranslation.py
 ```
 
@@ -84,6 +97,7 @@ Follow the prompts to:
 ### Kindle Web Translation
 
 ```bash
+source venv/bin/activate  # Activate venv first
 python kindleTranslation.py
 ```
 
@@ -93,6 +107,18 @@ Steps:
 2. **Select Book** - Click on a book in your library
 3. **Position** - Navigate to the starting page
 4. **Start** - Press Enter to begin translation
+
+### Reset Progress (Start from Page 1)
+
+To start translation from the beginning instead of resuming:
+
+```bash
+# Delete progress file (replace 'output' with your filename)
+rm output_progress.json
+
+# Or delete both progress and output file for a fresh start
+rm output_progress.json output.jsonl
+```
 
 > ⚠️ **Disclaimer:** Kindle translation is for personal use only. May violate Amazon's Terms of Service.
 
@@ -140,9 +166,21 @@ gemini-book-translator/
 │   ├── prompt_th.txt      # English → Thai
 │   ├── prompt_ing.txt     # Italian → English
 │   └── prompt_ocr.txt     # OCR prompt
+├── screenshots/           # Captured Kindle pages
+├── venv/                  # Python virtual environment
 ├── requirements.txt       # Python dependencies
 └── .env.example           # Environment template
 ```
+
+---
+
+## 🔧 Technical Details
+
+This project uses:
+
+- **[google-genai](https://pypi.org/project/google-genai/)** - Official Google GenAI SDK (successor to deprecated `google-generativeai`)
+- **[Playwright](https://playwright.dev/)** - Browser automation for Kindle Web
+- **[Pillow](https://pillow.readthedocs.io/)** - Image processing for OCR
 
 ---
 

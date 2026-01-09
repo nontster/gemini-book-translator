@@ -2,13 +2,15 @@
 Vision OCR Module - Extract text from images using Gemini Vision API
 """
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from google.api_core import exceptions as google_exceptions
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from PIL import Image
 from pathlib import Path
 import logging
 import os
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,33 @@ def preprocess_image(image_path: str, max_size: tuple = (1920, 1080)) -> Image.I
     return img
 
 
+def image_to_base64(image_path: str) -> tuple:
+    """
+    Convert image file to base64 string.
+    
+    Args:
+        image_path (str): Path to the image file
+        
+    Returns:
+        tuple: (base64_string, mime_type)
+    """
+    # Determine mime type
+    ext = Path(image_path).suffix.lower()
+    mime_types = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+    }
+    mime_type = mime_types.get(ext, 'image/png')
+    
+    with open(image_path, 'rb') as f:
+        image_data = f.read()
+    
+    return base64.b64encode(image_data).decode('utf-8'), mime_type
+
+
 @retry(
     wait=wait_exponential(multiplier=1, min=4, max=60),
     stop=stop_after_attempt(3),
@@ -63,7 +92,8 @@ def preprocess_image(image_path: str, max_size: tuple = (1920, 1080)) -> Image.I
     reraise=True
 )
 def extract_text_from_image(
-    model: genai.GenerativeModel,
+    client: genai.Client,
+    model_name: str,
     image_path: str,
     prompt: str = None
 ) -> str:
@@ -71,7 +101,8 @@ def extract_text_from_image(
     Extract text from an image using Gemini Vision API.
     
     Args:
-        model (genai.GenerativeModel): Configured Gemini model with vision capability
+        client (genai.Client): Configured Gemini client
+        model_name (str): Model name to use
         image_path (str): Path to the image file
         prompt (str): Optional custom prompt for OCR
         
@@ -81,8 +112,8 @@ def extract_text_from_image(
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Image file not found: {image_path}")
     
-    # Load and preprocess image
-    img = preprocess_image(image_path)
+    # Preprocess image
+    preprocess_image(image_path)
     
     # Use default or custom prompt
     if prompt is None:
@@ -90,8 +121,29 @@ def extract_text_from_image(
     
     logger.debug(f"Sending image {image_path} to Gemini Vision API")
     
-    # Send to Gemini Vision API
-    response = model.generate_content([prompt, img])
+    # Read image file directly
+    with open(image_path, 'rb') as f:
+        image_data = f.read()
+    
+    # Determine mime type
+    ext = Path(image_path).suffix.lower()
+    mime_types = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+    }
+    mime_type = mime_types.get(ext, 'image/png')
+    
+    # Create image part for new SDK
+    image_part = types.Part.from_bytes(data=image_data, mime_type=mime_type)
+    
+    # Send to Gemini Vision API using new SDK
+    response = client.models.generate_content(
+        model=model_name,
+        contents=[prompt, image_part]
+    )
     
     extracted_text = response.text.strip()
     
@@ -104,24 +156,28 @@ def extract_text_from_image(
 
 
 def extract_text_from_bytes(
-    model: genai.GenerativeModel,
+    client: genai.Client,
+    model_name: str,
     image_bytes: bytes,
-    prompt: str = None
+    prompt: str = None,
+    mime_type: str = "image/png"
 ) -> str:
     """
     Extract text from image bytes using Gemini Vision API.
     
     Args:
-        model (genai.GenerativeModel): Configured Gemini model with vision capability
+        client (genai.Client): Configured Gemini client
+        model_name (str): Model name to use
         image_bytes (bytes): Image data as bytes
         prompt (str): Optional custom prompt for OCR
+        mime_type (str): MIME type of the image
         
     Returns:
         str: Extracted text from the image
     """
     from io import BytesIO
     
-    # Load image from bytes
+    # Load image from bytes for preprocessing
     img = Image.open(BytesIO(image_bytes))
     
     # Convert to RGB if necessary
@@ -134,8 +190,14 @@ def extract_text_from_bytes(
     
     logger.debug("Sending image bytes to Gemini Vision API")
     
-    # Send to Gemini Vision API
-    response = model.generate_content([prompt, img])
+    # Create image part for new SDK
+    image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    
+    # Send to Gemini Vision API using new SDK
+    response = client.models.generate_content(
+        model=model_name,
+        contents=[prompt, image_part]
+    )
     
     extracted_text = response.text.strip()
     

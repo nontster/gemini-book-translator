@@ -1,4 +1,5 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from google.api_core import exceptions as google_exceptions
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
@@ -60,13 +61,14 @@ def customize_prompt(prompt: str, page_to_translate: str, history_it: str, histo
     retry=retry_if_exception_type(google_exceptions.ResourceExhausted),
     reraise=True
 )
-def translate_page(model: genai.GenerativeModel, prompt: str) -> str:
+def translate_page(client: genai.Client, model_name: str, prompt: str) -> str:
     """
     Sends the prompt to the generative model and returns the translation.
     Retries with exponential backoff on ResourceExhausted errors.
     
     Args:
-        model (genai.GenerativeMode): Google AI Studio API generative model
+        client (genai.Client): Google GenAI client
+        model_name (str): Model name to use
         prompt (str): original prompt
     
     Returns: 
@@ -75,15 +77,19 @@ def translate_page(model: genai.GenerativeModel, prompt: str) -> str:
     if not prompt.strip():
         raise ValueError("The prompt sent to the model is empty.")
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model=model_name,
+        contents=prompt
+    )
     return response.text
 
-def process_pdf(model: genai.GenerativeModel, pdf_name_file: str, jsonl_name_file: str, prompt_template: str) -> None:
+def process_pdf(client: genai.Client, model_name: str, pdf_name_file: str, jsonl_name_file: str, prompt_template: str) -> None:
     """
     Process a PDF file, translate each page, and save the results in a JSONL file.
     
     Args:
-        model (genai.GenerativeMode): Google AI Studio API generative model
+        client (genai.Client): Google GenAI client
+        model_name (str): Model name to use
         pdf_name_file (str): name of the PDF file to be translated
         jsonl_name_file (str): name of the jsonl file where translation information is saved
         prompt_template (str): prompt for translation
@@ -95,13 +101,13 @@ def process_pdf(model: genai.GenerativeModel, pdf_name_file: str, jsonl_name_fil
         reader_pdf = PdfReader(pdf_name_file)
     except FileNotFoundError:
         current_path = os.getcwd()
-        raise FileNotFoundError(f"The file “{pdf_name_file}” was not found in {current_path}.")
+        raise FileNotFoundError(f"The file '{pdf_name_file}' was not found in {current_path}.")
     
     pages = reader_pdf.pages
     number_pages = len(pages)
     
     if number_pages == 0:
-        raise ValueError(f"The PDF file ‘{pdf_name_file}’ does not contain any pages.")
+        raise ValueError(f"The PDF file '{pdf_name_file}' does not contain any pages.")
 
     logger.info(f"The file {pdf_name_file} contains {number_pages} pages that will be translated.")
 
@@ -128,7 +134,7 @@ def process_pdf(model: genai.GenerativeModel, pdf_name_file: str, jsonl_name_fil
             
             current_prompt = customize_prompt(prompt_template, text_page, history_it, history_ing)
             
-            translated_page = translate_page(model, current_prompt)
+            translated_page = translate_page(client, model_name, current_prompt)
             status = "success"
             logger.info(f"Page {page_number} successfully translated.")
             
@@ -177,8 +183,8 @@ def main() -> None:
             
         model_type = os.getenv("MODEL_TYPE", 'gemini-2.5-flash')
         
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(model_type) 
+        # Use new SDK
+        client = genai.Client(api_key=api_key)
         logger.info(f"Using Gemini model: {model_type}")
         
         logger.info("Welcome to the PDF book translator with Gemini.")
@@ -204,7 +210,7 @@ def main() -> None:
         
         logger.info(f"Start of the translation process for \"{book_name_file}\". The output will be saved in \"{jsonl_output_name_file}\".")
         
-        process_pdf(model, book_name_file, jsonl_output_name_file, imported_prompt_template)
+        process_pdf(client, model_type, book_name_file, jsonl_output_name_file, imported_prompt_template)
 
     except (ValueError, FileNotFoundError) as e:
         logger.error(f"\nERROR: {e}")

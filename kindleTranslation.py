@@ -3,7 +3,8 @@ Kindle Web Book Translation Tool
 Translate books from Kindle Web (read.amazon.com) using screen capture + Gemini Vision API
 """
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -64,7 +65,8 @@ def save_progress(progress_file: str, pages_completed: int, last_page: int) -> N
 
 
 async def process_kindle_book(
-    model: genai.GenerativeModel,
+    client: genai.Client,
+    model_name: str,
     reader: KindleWebReader,
     jsonl_name_file: str,
     prompt_template: str,
@@ -76,7 +78,8 @@ async def process_kindle_book(
     and translating each page.
     
     Args:
-        model (genai.GenerativeModel): Configured Gemini model
+        client (genai.Client): Configured Gemini client
+        model_name (str): Model name to use
         reader (KindleWebReader): Initialized Kindle Web reader
         jsonl_name_file (str): Output file path for translations
         prompt_template (str): Translation prompt template
@@ -130,7 +133,7 @@ async def process_kindle_book(
                 
                 # Step 2: Extract text using OCR
                 logger.info("Extracting text from screenshot...")
-                extracted_text = extract_text_from_image(model, screenshot_path, ocr_prompt)
+                extracted_text = extract_text_from_image(client, model_name, screenshot_path, ocr_prompt)
                 
                 if not extracted_text or not extracted_text.strip():
                     consecutive_empty += 1
@@ -146,7 +149,7 @@ async def process_kindle_book(
                     # Step 3: Translate the extracted text
                     logger.info("Translating extracted text...")
                     current_prompt = customize_prompt(prompt_template, extracted_text, history_it, history_ing)
-                    translated_page = translate_page(model, current_prompt)
+                    translated_page = translate_page(client, model_name, current_prompt)
                     
                     status = "success"
                     logger.info(f"Page {page_number} successfully translated.")
@@ -222,9 +225,8 @@ async def main_async():
     
     model_type = os.getenv("MODEL_TYPE", 'gemini-2.0-flash')
     
-    # Configure Gemini
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_type)
+    # Configure Gemini with new SDK
+    client = genai.Client(api_key=api_key)
     logger.info(f"Using Gemini model: {model_type}")
     
     print("\n" + "="*60)
@@ -300,7 +302,8 @@ async def main_async():
         
         # Start translation
         await process_kindle_book(
-            model=model,
+            client=client,
+            model_name=model_type,
             reader=reader,
             jsonl_name_file=output_file,
             prompt_template=prompt_template,
