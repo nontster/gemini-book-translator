@@ -8,6 +8,7 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.style import WD_STYLE_TYPE
 
 
 def convert_jsonl_to_docx(jsonl_file: str, docx_file: str = None, include_original: bool = False) -> str:
@@ -29,10 +30,19 @@ def convert_jsonl_to_docx(jsonl_file: str, docx_file: str = None, include_origin
     # Create Word document
     doc = Document()
     
-    # Set default font
-    style = doc.styles['Normal']
-    font = style.font
-    font.name = 'TH Sarabun New'  # Good font for Thai text
+    # Create new Style 'TranslationStyle' 
+    styles = doc.styles
+    try:
+        # Check existing of style
+        custom_style = styles['TranslationStyle']
+    except KeyError:
+        # If no style, create new style
+        custom_style = styles.add_style('TranslationStyle', WD_STYLE_TYPE.PARAGRAPH)
+        custom_style.base_style = styles['Normal']
+    
+    # Set Font to the new Style
+    font = custom_style.font
+    font.name = 'TH Sarabun New'
     font.size = Pt(16)
     
     # Read JSONL file
@@ -76,8 +86,13 @@ def convert_jsonl_to_docx(jsonl_file: str, docx_file: str = None, include_origin
                 doc.add_paragraph()  # Spacing
             
             # Add translated text
-            translated_para = doc.add_paragraph(translated_text)
-            
+            if translated_text:
+                for line in translated_text.split('\n'):
+                    clean_line = line.strip()
+                    if clean_line:  # ตรวจสอบว่าไม่ใช่บรรทัดว่าง
+                        para = doc.add_paragraph(clean_line)
+                        para.style = custom_style
+
             # Add page break between pages (except last)
             doc.add_paragraph()
             

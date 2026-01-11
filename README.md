@@ -139,6 +139,8 @@ python jsonl_to_docx.py output.jsonl -o my_book.docx
 python jsonl_to_docx.py output.jsonl --include-original
 ```
 
+> 💡 **Thai Font:** The Word document uses **TH Sarabun New** font (16pt) for proper Thai text rendering.
+
 > ⚠️ **Disclaimer:** Kindle translation is for personal use only. May violate Amazon's Terms of Service.
 
 ---
