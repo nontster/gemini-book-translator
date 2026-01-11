@@ -29,6 +29,8 @@ secrets.toml
 
 # Output files
 *.jsonl
+*.docx
+~$*.docx
 *_progress.json
 
 # Screenshots from Kindle translation
